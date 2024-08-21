@@ -1,0 +1,119 @@
+.ProductDisplay {
+    display: flex;
+    gap: 20px;
+    margin: 40px 170px;
+  }
+  
+  .ProductDisplay-left {
+    display: flex;
+    flex-direction: column;
+    gap: 17px;
+  }
+  
+  .ProductDisplay-img-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  
+  .ProductDisplay-img-list img {
+    height: 140px;
+    width: auto;
+    cursor: pointer;
+    object-fit: cover;
+  }
+  
+  .productdisplay-main-img {
+    
+    height: 600px;
+    object-fit: cover;
+    border-radius: 10px;
+  }
+  
+  .ProductDisplay-right {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    max-width: 400px;
+  }
+  
+  .ProductDisplay-right h1 {
+    font-size: 2em;
+    margin: 0;
+  }
+  
+  .ProductDisplay-right-star {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .ProductDisplay-right-star img {
+    width: 20px;
+    height: 20px;
+  }
+  
+  .ProductDisplay-right-prices {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .ProductDisplay-right-price-old {
+    text-decoration: line-through;
+    color: #888;
+  }
+  
+  .ProductDisplay-right-price-new {
+    font-size: 1.5em;
+    color: #e60000;
+  }
+  
+  .ProductDisplay-right-description {
+    margin: 20px 0;
+  }
+  
+  .ProductDisplay-right-size h1 {
+    margin-bottom: 10px;
+  }
+  
+  .ProductDisplay-right-size-options {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .ProductDisplay-right-size-options div {
+    padding: 10px 20px;
+    border: 1px solid #888;
+    border-radius: 5px;
+    cursor: pointer;
+  }
+  
+  .ProductDisplay-right-size-options div:hover {
+    background-color: #f0f0f0;
+  }
+  
+  button {
+    padding: 10px 20px;
+    background-color: #ff6600;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-top: 20px;
+  }
+  
+  button:hover {
+    background-color: #ff5500;
+  }
+  
+  .ProductDisplay-right-category,
+  .ProductDisplay-right-tags {
+    margin: 10px 0;
+  }
+  
+  .ProductDisplay-right-category span,
+  .ProductDisplay-right-tags span {
+    font-weight: bold;
+  }
+  
