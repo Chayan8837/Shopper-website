@@ -7,17 +7,44 @@ const multer = require('multer');
 const cors = require('cors');
 const admin = require('firebase-admin');
 const { v4: uuidv4 } = require('uuid'); // For unique filenames
-const path = require('path'); // For handling file paths
+const path = require('path'); // For handling file path
 
 const app = express();
 
 // Initialize Firebase Admin SDK with service account credentials
-const serviceAccount = require('./firebase-service-account.json'); // Ensure this file path is correct
+// const serviceAccount = require('./firebase-service-account.json'); // Ensure this file path is correct
+// admin.initializeApp({
+//   credential: admin.credential.cert(serviceAccount),
+//   storageBucket: 'shopper-29d9c.appspot.com'
+// });
+// const bucket = admin.storage().bucket();
+
+const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT;
+if (!serviceAccountBase64) {
+  throw new Error("FIREBASE_SERVICE_ACCOUNT environment variable is not set");
+}
+
+const serviceAccount = JSON.parse(
+  Buffer.from(serviceAccountBase64, 'base64').toString('utf8')
+);
+
+// Initialize Firebase Admin SDK
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
   storageBucket: 'shopper-29d9c.appspot.com'
 });
+
+// Create a reference to the storage bucket
 const bucket = admin.storage().bucket();
+
+
+
+
+
+
+
+
+
 
 app.use(express.json());
 app.use(cors({
