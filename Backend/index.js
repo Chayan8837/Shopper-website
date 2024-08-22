@@ -70,7 +70,7 @@ const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, unique: true, required: true },
     password: { type: String, required: true },
-    cartData: { type: Map, of: Number }, // Use a Map to store cart items
+    cartData: { type: Map, of: Number,default:{} }, // Use a Map to store cart items
     date: { type: Date, default: Date.now }
 });
 
