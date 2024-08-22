@@ -9,31 +9,27 @@ const admin = require('firebase-admin');
 const { v4: uuidv4 } = require('uuid');
 const path = require('path');
 
-const app = express();
-
-const serviceAccountBase64 = process.env.FIREBASE_SERVICE_ACCOUNT;
-if (!serviceAccountBase64) {
-  throw new Error("FIREBASE_SERVICE_ACCOUNT environment variable is not set");
-}
-
+// Firebase Setup
 const serviceAccount = JSON.parse(
-  Buffer.from(serviceAccountBase64, 'base64').toString('utf8')
+    Buffer.from('your_base64_encoded_service_account_key', 'base64').toString('utf8')
 );
 
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  storageBucket: 'shopper-29d9c.appspot.com'
+    credential: admin.credential.cert(serviceAccount),
+    storageBucket: 'shopper-29d9c.appspot.com'
 });
 
 const bucket = admin.storage().bucket();
 
+const app = express();
+
 app.use(express.json());
 app.use(cors({
     origin: [
-      'http://localhost:5174',
-      'http://localhost:5173',
-      'https://shopper-website-git-main-chayans-projects-b203bb5d.vercel.app',
-      'https://shopper-orcin.vercel.app'
+        'http://localhost:5174',
+        'http://localhost:5173',
+        'https://shopper-website-git-main-chayans-projects-b203bb5d.vercel.app',
+        'https://shopper-orcin.vercel.app'
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization', 'auth-token']
@@ -42,17 +38,18 @@ app.use(cors({
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
+// MongoDB Connection
 const uri = 'mongodb+srv://daschayan8837:svd74food@shopper.zvng5.mongodb.net/';
-
 mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => {
-        console.log('Successfully connected to MongoDB Atlas');
+        console.log('Successfully connected to MongoDB');
     })
     .catch((error) => {
-        console.error('Error connecting to MongoDB Atlas:', error);
+        console.error('Error connecting to MongoDB:', error);
         process.exit(1); // Exit the process on MongoDB connection error
     });
 
+// Mongoose Models
 const productSchema = new mongoose.Schema({
     id: { type: Number, required: true, unique: true },
     name: { type: String, required: true },
@@ -70,16 +67,63 @@ const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, unique: true, required: true },
     password: { type: String, required: true },
-    cartData: { type: Map, of: Number }, // Use a Map to store cart items
+    cartData: { type: Map, of: Number },
     date: { type: Date, default: Date.now }
 });
 
-const Users = mongoose.model("Users", userSchema);
+const User = mongoose.model("User", userSchema);
+
+// Middleware to authenticate JWT
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers['auth-token'];
+    if (!authHeader) return res.sendStatus(401);
+
+    jwt.verify(authHeader, 'your_jwt_secret', (err, user) => {
+        if (err) return res.sendStatus(403);
+        req.user = user;
+        next();
+    });
+};
+
+// Endpoints
 
 app.get("/", (req, res) => {
-    res.send("hiii");
+    res.send("Hello World");
 });
 
+// User Registration
+app.post("/register", async (req, res) => {
+    const { name, email, password } = req.body;
+    try {
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({ name, email, password: hashedPassword });
+        await newUser.save();
+        res.status(201).json({ success: true, message: "User registered successfully" });
+    } catch (error) {
+        console.error("Error registering user:", error);
+        res.status(500).json({ success: false, message: "Error registering user" });
+    }
+});
+
+// User Login
+app.post("/login", async (req, res) => {
+    const { email, password } = req.body;
+    try {
+        const user = await User.findOne({ email });
+        if (!user) return res.status(400).json({ success: false, message: "Invalid credentials" });
+
+        const validPassword = await bcrypt.compare(password, user.password);
+        if (!validPassword) return res.status(400).json({ success: false, message: "Invalid credentials" });
+
+        const token = jwt.sign({ userId: user._id }, 'your_jwt_secret', { expiresIn: '1h' });
+        res.json({ success: true, token });
+    } catch (error) {
+        console.error("Error logging in user:", error);
+        res.status(500).json({ success: false, message: "Error logging in user" });
+    }
+});
+
+// Add Product
 app.post("/addproduct", async (req, res) => {
     try {
         const lastProduct = await Product.findOne().sort({ id: -1 });
@@ -102,6 +146,7 @@ app.post("/addproduct", async (req, res) => {
     }
 });
 
+// Upload Image
 app.post("/upload", upload.single('product'), async (req, res) => {
     try {
         if (!req.file) {
@@ -132,6 +177,7 @@ app.post("/upload", upload.single('product'), async (req, res) => {
     }
 });
 
+// Remove Product
 app.post("/removeproduct", async (req, res) => {
     try {
         const productId = req.body.id;
@@ -159,6 +205,7 @@ app.post("/removeproduct", async (req, res) => {
     }
 });
 
+// Fetch All Products
 app.get("/allproducts", async (req, res) => {
     try {
         let products = await Product.find({});
@@ -169,6 +216,7 @@ app.get("/allproducts", async (req, res) => {
     }
 });
 
+// Fetch New Collection
 app.get("/newcollection", async (req, res) => {
     try {
         let product = await Product.find({});
@@ -180,6 +228,7 @@ app.get("/newcollection", async (req, res) => {
     }
 });
 
+// Fetch Popular in Women
 app.get("/popularinwomen", async (req, res) => {
     try {
         let product = await Product.find({ category: "women" });
@@ -191,64 +240,59 @@ app.get("/popularinwomen", async (req, res) => {
     }
 });
 
-const fetchUser = async (req, res, next) => {
-    const token = req.header('auth-token');
-    if (!token) {
-        return res.status(401).send({ errors: "Error authentication" });
-    }
+// Add to Cart
+app.post("/addtocart", authenticateToken, async (req, res) => {
     try {
-        const data = jwt.verify(token, process.env.JWT_SECRET || "secret_ecom");
-        req.user = data.user;
-        next();
-    } catch (error) {
-        console.error("Error verifying token:", error);
-        res.status(401).send({ errors: "Error authentication" });
-    }
-};
-
-// Add to cart
-app.post("/addtocart", fetchUser, async (req, res) => {
-    try {
-        let user = await Users.findById(req.user.id);
+        let user = await User.findById(req.user.userId);
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found" });
         }
 
         user.cartData.set(req.body.itemId, (user.cartData.get(req.body.itemId) || 0) + 1);
         await user.save();
-        res.status(200).json({ success: true, message: "Item added to cart successfully" });
+        res.status(200).json({ success: true, message: "Product added to cart" });
     } catch (error) {
-        console.error("Error adding item to cart:", error);
-        res.status(500).json({ success: false, message: `Error adding item to cart: ${error.message}` });
+        console.error("Error adding to cart:", error);
+        res.status(500).json({ success: false, message: "Error adding to cart" });
     }
 });
 
-// Remove from cart
-app.post("/removefromcart", fetchUser, async (req, res) => {
+// View Cart
+app.get("/viewcart", authenticateToken, async (req, res) => {
     try {
-        let user = await Users.findById(req.user.id);
+        let user = await User.findById(req.user.userId);
         if (!user) {
             return res.status(404).json({ success: false, message: "User not found" });
         }
 
-        let currentCount = user.cartData.get(req.body.itemId) || 0;
-        if (currentCount > 0) {
-            user.cartData.set(req.body.itemId, currentCount - 1);
-            if (user.cartData.get(req.body.itemId) <= 0) {
-                user.cartData.delete(req.body.itemId);
-            }
-            await user.save();
-            res.status(200).json({ success: true, message: "Item removed from cart successfully" });
-        } else {
-            res.status(400).json({ success: false, message: "Item not in cart" });
-        }
+        const cartItems = Array.from(user.cartData.entries());
+        res.json(cartItems);
     } catch (error) {
-        console.error("Error removing item from cart:", error);
-        res.status(500).json({ success: false, message: `Error removing item from cart: ${error.message}` });
+        console.error("Error viewing cart:", error);
+        res.status(500).json({ success: false, message: "Error viewing cart" });
     }
 });
 
+// Checkout
+app.post("/checkout", authenticateToken, async (req, res) => {
+    try {
+        let user = await User.findById(req.user.userId);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
 
+        // Here you would implement checkout logic (e.g., process payment, clear cart)
+        user.cartData.clear();
+        await user.save();
+
+        res.json({ success: true, message: "Checkout successful" });
+    } catch (error) {
+        console.error("Error during checkout:", error);
+        res.status(500).json({ success: false, message: "Error during checkout" });
+    }
+});
+
+// Start Server
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
 });
