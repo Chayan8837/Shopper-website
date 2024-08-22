@@ -11,7 +11,7 @@ const path = require('path');
 
 // Firebase Setup
 const serviceAccount = JSON.parse(
-    Buffer.from('your_base64_encoded_service_account_key', 'base64').toString('utf8')
+    Buffer.from('serviceAccountBase64', 'base64').toString('utf8')
 );
 
 admin.initializeApp({
