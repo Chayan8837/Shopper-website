@@ -206,6 +206,7 @@ const fetchUser = async (req, res, next) => {
     }
 };
 
+// Add to cart
 app.post("/addtocart", fetchUser, async (req, res) => {
     try {
         let user = await Users.findById(req.user.id);
@@ -218,10 +219,11 @@ app.post("/addtocart", fetchUser, async (req, res) => {
         res.status(200).json({ success: true, message: "Item added to cart successfully" });
     } catch (error) {
         console.error("Error adding item to cart:", error);
-        res.status(500).json({ success: false, message: "Error adding item to cart" });
+        res.status(500).json({ success: false, message: `Error adding item to cart: ${error.message}` });
     }
 });
 
+// Remove from cart
 app.post("/removefromcart", fetchUser, async (req, res) => {
     try {
         let user = await Users.findById(req.user.id);
@@ -229,23 +231,23 @@ app.post("/removefromcart", fetchUser, async (req, res) => {
             return res.status(404).json({ success: false, message: "User not found" });
         }
 
-        if (user.cartData.has(req.body.itemId)) {
-            let newCount = user.cartData.get(req.body.itemId) - 1;
-            if (newCount <= 0) {
+        let currentCount = user.cartData.get(req.body.itemId) || 0;
+        if (currentCount > 0) {
+            user.cartData.set(req.body.itemId, currentCount - 1);
+            if (user.cartData.get(req.body.itemId) <= 0) {
                 user.cartData.delete(req.body.itemId);
-            } else {
-                user.cartData.set(req.body.itemId, newCount);
             }
             await user.save();
             res.status(200).json({ success: true, message: "Item removed from cart successfully" });
         } else {
-            res.status(404).json({ success: false, message: "Item not found in cart" });
+            res.status(400).json({ success: false, message: "Item not in cart" });
         }
     } catch (error) {
         console.error("Error removing item from cart:", error);
-        res.status(500).json({ success: false, message: "Error removing item from cart" });
+        res.status(500).json({ success: false, message: `Error removing item from cart: ${error.message}` });
     }
 });
+
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
