@@ -194,7 +194,7 @@ app.get("/popularinwomen", async (req, res) => {
 const fetchUser = async (req, res, next) => {
     const token = req.header('auth-token');
     if (!token) {
-        return res.status(401).send({ errors: "Error authentication" });
+        return res.status(401).send({ errors: "Authentication token is missing" });
     }
     try {
         const data = jwt.verify(token, process.env.JWT_SECRET || "secret_ecom");
@@ -202,9 +202,10 @@ const fetchUser = async (req, res, next) => {
         next();
     } catch (error) {
         console.error("Error verifying token:", error);
-        res.status(401).send({ errors: "Error authentication" });
+        res.status(401).send({ errors: "Invalid authentication token" });
     }
 };
+
 
 // Add to cart
 app.post("/addtocart", fetchUser, async (req, res) => {
