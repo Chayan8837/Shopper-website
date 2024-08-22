@@ -178,16 +178,15 @@ app.post("/upload", upload.single('product'), async (req, res) => {
         });
 
         blobStream.on('finish', async () => {
-            // Generate a signed URL
-            const expiration = Date.now() + 15 * 60 * 1000; // 15 minutes
-            const [signedUrl] = await blob.getSignedUrl({
-                action: 'read',
-                expires: expiration,
-            });
+            // Make the file public
+            await blob.makePublic();
+
+            // Get the public URL
+            const publicUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
 
             res.status(200).json({
                 success: true,
-                image_url: signedUrl
+                image_url: publicUrl
             });
         });
 
@@ -197,6 +196,7 @@ app.post("/upload", upload.single('product'), async (req, res) => {
         res.status(500).json({ success: false, message: "Internal server error" });
     }
 });
+;
 
 
 
