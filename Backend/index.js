@@ -44,7 +44,7 @@ const upload = multer({ storage: storage });
 
 const uri = 'mongodb+srv://daschayan8837:svd74food@shopper.zvng5.mongodb.net/';
 
-mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(uri)
     .then(() => {
         console.log('Successfully connected to MongoDB Atlas');
     })
@@ -206,6 +206,63 @@ const fetchUser = async (req, res, next) => {
     }
 };
 
+// Signup
+app.post("/signup", async (req, res) => {
+    try {
+        const { name, email, password } = req.body;
+
+        // Check if user already exists
+        const existingUser = await Users.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ success: false, message: "User already exists" });
+        }
+
+        // Hash the password
+        const hashedPassword = await bcrypt.hash(password, 12);
+
+        // Create a new user
+        const newUser = new Users({
+            name,
+            email,
+            password: hashedPassword
+        });
+
+        // Save the user to the database
+        await newUser.save();
+
+        res.status(201).json({ success: true, message: "User created successfully" });
+    } catch (error) {
+        console.error("Error signing up user:", error);
+        res.status(500).json({ success: false, message: `Error signing up user: ${error.message}` });
+    }
+});
+
+// Login
+app.post("/login", async (req, res) => {
+    try {
+        const { email, password } = req.body;
+
+        // Find the user by email
+        const user = await Users.findOne({ email });
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        // Check the password
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ success: false, message: "Invalid credentials" });
+        }
+
+        // Generate a token
+        const token = jwt.sign({ user: { id: user._id } }, process.env.JWT_SECRET || "secret_ecom", { expiresIn: '1h' });
+
+        res.status(200).json({ success: true, token });
+    } catch (error) {
+        console.error("Error logging in user:", error);
+        res.status(500).json({ success: false, message: `Error logging in user: ${error.message}` });
+    }
+});
 
 // Add to cart
 app.post("/addtocart", fetchUser, async (req, res) => {
@@ -249,9 +306,6 @@ app.post("/removefromcart", fetchUser, async (req, res) => {
     }
 });
 
-
-
-
 // Get cart data
 app.post("/getcart", fetchUser, async (req, res) => {
     try {
@@ -268,7 +322,6 @@ app.post("/getcart", fetchUser, async (req, res) => {
         res.status(500).json({ success: false, message: `Error fetching cart data: ${error.message}` });
     }
 });
-
 
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
