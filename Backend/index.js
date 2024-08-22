@@ -265,7 +265,7 @@ app.post("/login", async (req, res) => {
 });
 
 // Add to cart
-app.post("/addtocart", fetchUser, async (req, res) => {
+app.post("/addtocart", async (req, res) => {
     try {
         let user = await Users.findById(req.user.id);
         if (!user) {
