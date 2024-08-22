@@ -50,7 +50,7 @@ app.use(express.json());
 app.use(cors({
     origin: ['http://localhost:5174','http://localhost:5173','https://shopper-website-git-main-chayans-projects-b203bb5d.vercel.app','https://shopper-orcin.vercel.app'], // Allow requests from this origin
     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allow specific methods
-    allowedHeaders: ['Content-Type', 'Authorization'] // Allow specific headers
+    allowedHeaders: ['Content-Type', 'Authorization','auth-token'] // Allow specific headers
 }));
 
 // Configure multer to use memory storage
