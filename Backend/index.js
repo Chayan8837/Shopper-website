@@ -42,7 +42,7 @@ app.use(cors({
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
-const uri = process.env.MONGODB_URI || 'your-default-mongodb-uri-here';
+const uri = 'mongodb+srv://daschayan8837:svd74food@shopper.zvng5.mongodb.net/';
 
 mongoose.connect(uri, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => {
