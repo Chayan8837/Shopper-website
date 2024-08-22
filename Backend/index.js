@@ -324,6 +324,75 @@ app.post("/getcart", fetchuser, async (req, res) => {
     }
 });
 
+
+app.post("/login", async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        let user = await Users.findOne({ email });
+
+        if (!user) {
+            return res.status(400).json({ success: false, errors: "Invalid email or password" });
+        }
+
+        const passwordCompare = await bcrypt.compare(password, user.password);
+
+        if (!passwordCompare) {
+            return res.status(400).json({ success: false, errors: "Invalid email or password" });
+        }
+
+        const payload = {
+            user: {
+                id: user._id
+            }
+        };
+
+        const token = jwt.sign(payload, "secret_ecom");
+
+        res.json({ success: true, token });
+    } catch (error) {
+        console.error("Error during login:", error);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+});
+
+app.post("/signup", async (req, res) => {
+    const { name, email, password } = req.body;
+
+    try {
+        let user = await Users.findOne({ email });
+
+        if (user) {
+            return res.status(400).json({ success: false, errors: "User already exists" });
+        }
+
+        const salt = await bcrypt.genSalt(10);
+        const securedPassword = await bcrypt.hash(password, salt);
+
+        user = new Users({
+            name,
+            email,
+            password: securedPassword
+        });
+
+        await user.save();
+
+        const payload = {
+            user: {
+                id: user._id
+            }
+        };
+
+        const token = jwt.sign(payload, "secret_ecom");
+
+        res.json({ success: true, token });
+    } catch (error) {
+        console.error("Error during signup:", error);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+});
+
+
 app.listen(port, (error) => {
     if (!error) {
         console.log(`Server is running on port ${port}`);
