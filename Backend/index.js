@@ -191,7 +191,7 @@ app.get("/popularinwomen", async (req, res) => {
     }
 });
 
-const fetchuser = async (req, res, next) => {
+const fetchUser = async (req, res, next) => {
     const token = req.header('auth-token');
     if (!token) {
         return res.status(401).send({ errors: "Error authentication" });
@@ -206,11 +206,15 @@ const fetchuser = async (req, res, next) => {
     }
 };
 
-app.post("/addtocart", fetchuser, async (req, res) => {
+app.post("/addtocart", fetchUser, async (req, res) => {
     try {
-        let userdata = await Users.findById(req.user.id);
-        userdata.cartData.set(req.body.itemId, (userdata.cartData.get(req.body.itemId) || 0) + 1);
-        await userdata.save();
+        let user = await Users.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        user.cartData.set(req.body.itemId, (user.cartData.get(req.body.itemId) || 0) + 1);
+        await user.save();
         res.status(200).json({ success: true, message: "Item added to cart successfully" });
     } catch (error) {
         console.error("Error adding item to cart:", error);
@@ -218,20 +222,24 @@ app.post("/addtocart", fetchuser, async (req, res) => {
     }
 });
 
-app.post("/removefromcart", fetchuser, async (req, res) => {
+app.post("/removefromcart", fetchUser, async (req, res) => {
     try {
-        let userdata = await Users.findById(req.user.id);
-        if (userdata.cartData.has(req.body.itemId)) {
-            let newCount = userdata.cartData.get(req.body.itemId) - 1;
+        let user = await Users.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        if (user.cartData.has(req.body.itemId)) {
+            let newCount = user.cartData.get(req.body.itemId) - 1;
             if (newCount <= 0) {
-                userdata.cartData.delete(req.body.itemId);
+                user.cartData.delete(req.body.itemId);
             } else {
-                userdata.cartData.set(req.body.itemId, newCount);
+                user.cartData.set(req.body.itemId, newCount);
             }
-            await userdata.save();
+            await user.save();
             res.status(200).json({ success: true, message: "Item removed from cart successfully" });
         } else {
-            res.status(400).json({ success: false, message: "Item not in cart" });
+            res.status(404).json({ success: false, message: "Item not found in cart" });
         }
     } catch (error) {
         console.error("Error removing item from cart:", error);
@@ -239,48 +247,6 @@ app.post("/removefromcart", fetchuser, async (req, res) => {
     }
 });
 
-app.post("/signup", async (req, res) => {
-    const { name, email, password } = req.body;
-    try {
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
-
-        const user = new Users({ name, email, password: hashedPassword });
-        await user.save();
-
-        const data = { user: { id: user.id } };
-        const authToken = jwt.sign(data, process.env.JWT_SECRET || "secret_ecom", { expiresIn: '1h' });
-
-        res.status(200).json({ success: true, message: "User created successfully", authToken });
-    } catch (error) {
-        console.error("Error creating user:", error);
-        res.status(500).json({ success: false, message: "Error creating user" });
-    }
-});
-
-app.post("/login", async (req, res) => {
-    const { email, password } = req.body;
-    try {
-        const user = await Users.findOne({ email });
-        if (!user) {
-            return res.status(400).json({ success: false, message: "Invalid credentials" });
-        }
-
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ success: false, message: "Invalid credentials" });
-        }
-
-        const data = { user: { id: user.id } };
-        const authToken = jwt.sign(data, process.env.JWT_SECRET || "secret_ecom", { expiresIn: '1h' });
-
-        res.status(200).json({ success: true, message: "Logged in successfully", authToken });
-    } catch (error) {
-        console.error("Error logging in:", error);
-        res.status(500).json({ success: false, message: "Error logging in" });
-    }
-});
-
 app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+    console.log(`Server is running on port ${port}`);
 });
