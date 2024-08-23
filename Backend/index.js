@@ -66,15 +66,15 @@ const productSchema = new mongoose.Schema({
 
 const Product = mongoose.model("Product", productSchema);
 
+// User Schema
 const userSchema = new mongoose.Schema({
-    name: { type: String, required: true },
+    name: { type: String },
     email: { type: String, unique: true, required: true },
     password: { type: String, required: true },
-    cartData: { type: Map, of: Number,default:{} }, // Use a Map to store cart items
+    cartData: { type: [Number], default: Array(300).fill(0) }, // Initialize cart array with 300 elements
     date: { type: Date, default: Date.now }
 });
-
-const Users = mongoose.model("Users", userSchema);
+const User = mongoose.model('User', userSchema);
 
 app.get("/", (req, res) => {
     res.send("hiii");
@@ -206,120 +206,127 @@ const fetchUser = async (req, res, next) => {
     }
 };
 
-// Signup
-app.post("/signup", async (req, res) => {
+
+
+
+
+
+
+app.post('/signup', async (req, res) => {
     try {
         const { name, email, password } = req.body;
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Check if user already exists
-        const existingUser = await Users.findOne({ email });
-        if (existingUser) {
-            return res.status(400).json({ success: false, message: "User already exists" });
-        }
-
-        // Hash the password
-        const hashedPassword = await bcrypt.hash(password, 12);
-
-        // Create a new user
-        const newUser = new Users({
+        const newUser = new User({
             name,
             email,
             password: hashedPassword
         });
 
-        // Save the user to the database
-        await newUser.save();
+        const savedUser = await newUser.save();
+        const token = jwt.sign({ user: { id: savedUser._id } }, 'secret_ecom');
 
-        res.status(201).json({ success: true, message: "User created successfully" });
+        res.json({ success: true, token });
     } catch (error) {
-        console.error("Error signing up user:", error);
-        res.status(500).json({ success: false, message: `Error signing up user: ${error.message}` });
+        console.error('Error during signup:', error);
+        res.status(500).json({ success: false, errors: 'Error during signup' });
     }
 });
 
-// Login
-app.post("/login", async (req, res) => {
+app.post('/login', async (req, res) => {
     try {
         const { email, password } = req.body;
-
-        // Find the user by email
-        const user = await Users.findOne({ email });
+        const user = await User.findOne({ email });
         if (!user) {
-            return res.status(404).json({ success: false, message: "User not found" });
+            return res.status(400).json({ success: false, errors: 'Invalid credentials' });
         }
 
-        // Check the password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(400).json({ success: false, message: "Invalid credentials" });
+            return res.status(400).json({ success: false, errors: 'Invalid credentials' });
         }
 
-        // Generate a token
-        const token = jwt.sign({ user: { id: user._id } }, process.env.JWT_SECRET || "secret_ecom", { expiresIn: '1h' });
-
-        res.status(200).json({ success: true, token });
+        const token = jwt.sign({ user: { id: user._id } }, 'secret_ecom');
+        res.json({ success: true, token });
     } catch (error) {
-        console.error("Error logging in user:", error);
-        res.status(500).json({ success: false, message: `Error logging in user: ${error.message}` });
+        console.error('Error during login:', error);
+        res.status(500).json({ success: false, errors: 'Error during login' });
     }
 });
 
-// Add to cart
-app.post("/addtocart", fetchUser, async (req, res) => {
-    try {
-        let user = await Users.findById(req.user.id);
-        if (!user) {
-            return res.status(404).json({ success: false, message: "User not found" });
-        }
 
-        user.cartData.set(req.body.itemId, (user.cartData.get(req.body.itemId) || 0) + 1);
-        await user.save();
-        res.status(200).json({ success: true, message: "Item added to cart successfully" });
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Endpoint to fetch cart data
+app.post('/getcart', fetchUser, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        res.json(user.cartData);
     } catch (error) {
-        console.error("Error adding item to cart:", error);
-        res.status(500).json({ success: false, message: `Error adding item to cart: ${error.message}` });
+        console.error('Error fetching cart data:', error);
+        res.status(500).json({ success: false, message: 'Error fetching cart data' });
     }
 });
 
-// Remove from cart
-app.post("/removefromcart", fetchUser, async (req, res) => {
+// Endpoint to add item to cart
+app.post('/addtocart', fetchUser, async (req, res) => {
     try {
-        let user = await Users.findById(req.user.id);
+        const { itemId, quantity } = req.body;
+        const user = await User.findById(req.user.id);
         if (!user) {
-            return res.status(404).json({ success: false, message: "User not found" });
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        let currentCount = user.cartData.get(req.body.itemId) || 0;
-        if (currentCount > 0) {
-            user.cartData.set(req.body.itemId, currentCount - 1);
-            if (user.cartData.get(req.body.itemId) <= 0) {
-                user.cartData.delete(req.body.itemId);
-            }
+        if (itemId >= 0 && itemId < 300) {
+            user.cartData[itemId] = (user.cartData[itemId] || 0) + quantity;
             await user.save();
-            res.status(200).json({ success: true, message: "Item removed from cart successfully" });
+            res.status(200).json({ success: true, message: 'Item added to cart successfully' });
         } else {
-            res.status(400).json({ success: false, message: "Item not in cart" });
+            res.status(400).json({ success: false, message: 'Invalid item ID' });
         }
     } catch (error) {
-        console.error("Error removing item from cart:", error);
-        res.status(500).json({ success: false, message: `Error removing item from cart: ${error.message}` });
+        console.error('Error adding item to cart:', error);
+        res.status(500).json({ success: false, message: 'Error adding item to cart' });
     }
 });
 
-// Get cart data
-app.post("/getcart", fetchUser, async (req, res) => {
+// Endpoint to remove item from cart
+app.post('/removefromcart', fetchUser, async (req, res) => {
     try {
-        // Find the user by ID
-        const user = await Users.findById(req.user.id);
+        const { itemId, quantity } = req.body;
+        const user = await User.findById(req.user.id);
         if (!user) {
-            return res.status(404).json({ success: false, message: "User not found" });
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
 
-        // Send the cart data to the client
-        res.status(200).json(user.cartData);
+        if (itemId >= 0 && itemId < 300) {
+            if (user.cartData[itemId] > 0) {
+                user.cartData[itemId] = Math.max(user.cartData[itemId] - quantity, 0);
+                await user.save();
+                res.status(200).json({ success: true, message: 'Item removed from cart successfully' });
+            } else {
+                res.status(404).json({ success: false, message: 'Item not found in cart' });
+            }
+        } else {
+            res.status(400).json({ success: false, message: 'Invalid item ID' });
+        }
     } catch (error) {
-        console.error("Error fetching cart data:", error);
-        res.status(500).json({ success: false, message: `Error fetching cart data: ${error.message}` });
+        console.error('Error removing item from cart:', error);
+        res.status(500).json({ success: false, message: 'Error removing item from cart' });
     }
 });
 
