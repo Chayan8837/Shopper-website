@@ -32,8 +32,8 @@ app.use(cors({
     origin: [
       'http://localhost:5174',
       'http://localhost:5173',
-      'https://shopper-website-git-main-chayans-projects-b203bb5d.vercel.app',
-      'https://shopper-orcin.vercel.app'
+      'https://shopperweb.vercel.app'
+      
     ],
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization', 'auth-token']
