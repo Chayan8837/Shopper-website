@@ -10,6 +10,7 @@ const ProductDisplay = ({ product }) => {
   const { addToCart } = useContext(ShopContext);
 
   const handleAddToCart = () => {
+    console.log(`added to cart :${product.id}`)
     addToCart(product.id);
     toast.success("Item added to cart!");
   };
@@ -46,7 +47,7 @@ const ProductDisplay = ({ product }) => {
           </div>
         </div>
         <div className="ProductDisplay-right-description">
-          Men Green Solid Zippered Full-Zip Slim Fit Bomber Jacket
+          {product.name}
         </div>
         <div className="ProductDisplay-right-size">
           <h1>Select Size</h1>

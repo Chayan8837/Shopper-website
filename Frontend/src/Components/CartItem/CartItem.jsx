@@ -1,11 +1,10 @@
 import React, { useContext } from 'react';
 import './CartItem.css';
-import { ShopContext } from '../../context/ShopContext';
-import all_product from '../../Components/assets/all_product';
+import { ShopContext} from '../../context/ShopContext';
 import remove_icon from "../assets/cart_cross_icon.png";
 
 const CartItem = () => {
-    const { addToCart, removeFromCart, cartItems } = useContext(ShopContext);
+    const { addToCart, removeFromCart, cartItems,all_product } = useContext(ShopContext);
 
     const cartIsEmpty = Object.values(cartItems).every(item => item === 0);
 
